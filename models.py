@@ -16,4 +16,5 @@ class Task(BaseModel):
 
 class NewTask(BaseModel):
     title: str
+    done: bool
     user_id: int

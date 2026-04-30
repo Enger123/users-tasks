@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 import uvicorn, crud
-from typing import List
+from typing import List, Optional
 from models import Task, NewTask, User, NewUser
 
 app = FastAPI()
@@ -49,6 +49,18 @@ def add_user(newuser: NewUser) -> User:
 @app.get("/users/{id}/tasks", response_model=List[Task])
 def get_user_task(id: int) -> List[Task]:
     return crud.get_user_task(id)
+
+@app.patch("/tasks/{id}/done", response_model=Task)
+def change_done(id: int) -> Task:
+    return crud.change_done(id)
+
+@app.get("/tasks_user", response_model=List[Task])
+def show_tasks(user_id: Optional[int] = None) -> List[Task]:
+    return crud.show_tasks(user_id)
+
+@app.get("/tasks_user_done", response_model=List[Task])
+def show_filtered_task(user_id: Optional[int] = None, done: Optional[int|bool] = None) -> List[Task]:
+    return crud.show_filtered_task(user_id, done)
 
 if __name__ == '__main__':
     uvicorn.run("main:app", reload=True)

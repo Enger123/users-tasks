@@ -62,5 +62,17 @@ def show_tasks(user_id: Optional[int] = None) -> List[Task]:
 def show_filtered_task(user_id: Optional[int] = None, done: Optional[int|bool] = None) -> List[Task]:
     return crud.show_filtered_task(user_id, done)
 
+@app.get("/tasks_done_sort", response_model=List[Task])
+def show_done_sort(done: Optional[int|bool] = None, sort: str = None) -> List[Task]:
+    return crud.show_done_sort(done, sort)
+
+@app.get("/tasks_limit", response_model=List[Task])
+def show_limit(limit: Optional[int] = None ) -> List[Task]:
+    return crud.show_limit(limit)
+
+@app.get("/userss/{id}/tasks", response_model=List[Task])
+def show_tasks_sort(id: int, done: Optional[int|bool] = None) -> List[Task]:
+    return crud.show_tasks_sort(id, done)
+
 if __name__ == '__main__':
     uvicorn.run("main:app", reload=True)

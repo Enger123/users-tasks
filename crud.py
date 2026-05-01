@@ -88,9 +88,8 @@ def change_done(id: int) -> Task:
 def show_tasks(user_id: Optional[int] = None) -> List[Task]:
     if user_id is None:
         cur.execute("SELECT * FROM tasks")
-        tasks = cur.fetchall()
-        return [Task(id=t[0], title=t[1], done=bool(t[2]), user_id=t[3]) for t in tasks]
-    cur.execute("SELECT * FROM tasks WHERE user_id = ?", (user_id, ))
+    else:
+        cur.execute("SELECT * FROM tasks WHERE user_id = ?", (user_id, ))
     tasks = cur.fetchall()
     return [Task(id=t[0], title=t[1], done=bool(t[2]), user_id=t[3]) for t in tasks]
 
@@ -104,17 +103,56 @@ def show_filtered_task(user_id: Optional[int] = None, done: Optional[bool] = Non
     if user_id is None and done is None:
         cur.execute("SELECT * FROM tasks")
         tasks = cur.fetchall()
-        return [Task(id=t[0], title=t[1], done=bool(t[2]), user_id=t[3]) for t in tasks]
     elif user_id is not None and done is None:
         check_user_id(user_id)
         cur.execute("SELECT * FROM tasks WHERE user_id = ?", (user_id, ))
         tasks = cur.fetchall()
-        return [Task(id=t[0], title=t[1], done=bool(t[2]), user_id=t[3]) for t in tasks]
     elif user_id is None and done is not None:
         cur.execute("SELECT * FROM tasks WHERE done = ?", (int(done),))
         tasks = cur.fetchall()
-        return [Task(id=t[0], title=t[1], done=bool(t[2]), user_id=t[3]) for t in tasks]
-    check_user_id(user_id)
-    cur.execute("SELECT * FROM tasks WHERE user_id = ? AND done = ?", (user_id, int(done)))
-    tasks = cur.fetchall()
+    else:
+        check_user_id(user_id)
+        cur.execute("SELECT * FROM tasks WHERE user_id = ? AND done = ?", (user_id, int(done)))
+        tasks = cur.fetchall()
     return [Task(id=t[0], title=t[1], done=bool(t[2]), user_id=t[3]) for t in tasks]
+
+def check_sort_type(sort: str, done: int|bool):
+    if sort == 'asc':
+        cur.execute("SELECT * FROM tasks WHERE done = ? ORDER BY id", (done,))
+    elif sort == 'desc':
+        cur.execute("SELECT * FROM tasks WHERE done = ? ORDER BY id DESC", (done,))
+
+def show_done_sort(done: Optional[int|bool] = None, sort: str = None) -> List[Task]:
+    if done is not None and sort is not None:
+        check_sort_type(sort, done)
+    elif done is not None and sort is None:
+        cur.execute("SELECT * FROM tasks WHERE done = ?", (int(done), ))
+    elif done is None and sort is not None:
+        if sort == 'asc':
+            cur.execute("SELECT * FROM tasks ORDER BY id")
+        elif sort == 'desc':
+            cur.execute("SELECT * FROM tasks ORDER BY id DESC")
+    else:
+        cur.execute("SELECT * FROM tasks")
+    tasks = cur.fetchall()
+    return [Task(id=t[0], title=t[1], done=t[2], user_id=t[3]) for t in tasks]
+
+def show_limit(limit: Optional[int] = None ) -> List[Task]:
+    if limit is not None:
+        cur.execute("SELECT * FROM tasks LIMIT ?", (limit, ))
+    else:
+        cur.execute("SELECT * FROM tasks")
+    tasks = cur.fetchall()
+    return [Task(id=t[0], title=t[1], done=t[2], user_id=t[3]) for t in tasks]
+
+def show_tasks_sort(id: int, done: Optional[int|bool] = None) -> List[Task]:
+    cur.execute("SELECT id from users WHERE id = ?", (id, ))
+    if not cur.fetchone():
+        raise HTTPException(status_code=404, detail='User not found')
+    if done is None:
+        cur.execute("SELECT * FROM tasks")
+    else:
+        cur.execute("SELECT * FROM tasks WHERE user_id = ? AND done = ?", (id, int(done)))
+    tasks = cur.fetchall()
+    return [Task(id=t[0], title=t[1], done=t[2], user_id=t[3]) for t in tasks]
+

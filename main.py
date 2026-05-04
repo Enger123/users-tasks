@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-import uvicorn, crud
+import crud
 from typing import List, Optional
 from models import Task, NewTask, User, NewUser
 
@@ -7,8 +7,8 @@ app = FastAPI()
 
 #GET TASKS
 @app.get("/tasks", response_model=List[Task])
-def get_tasks() -> List[Task]:
-    return crud.get_tasks()
+def get_tasks(user_id: Optional[int] = None, done: Optional[bool] = None, sort: str = None, limit: Optional[int] = None, title: Optional[str] = None) -> List[Task]:
+    return crud.get_tasks(user_id, done, sort, limit, title)
 
 #GET TASK ID
 @app.get("/tasks/{id}", response_model=Task)
@@ -35,7 +35,6 @@ def delete_task(id: int) -> List[Task]:
 def get_users() -> List[User]:
     return crud.get_users()
 
-#GET USERS ID
 @app.get("/users/{id}", response_model=User)
 def get_user_id(id: int) -> User:
     return crud.get_user_id(id)
@@ -47,32 +46,9 @@ def add_user(newuser: NewUser) -> User:
 
 #GET USERS ID TASK
 @app.get("/users/{id}/tasks", response_model=List[Task])
-def get_user_task(id: int) -> List[Task]:
-    return crud.get_user_task(id)
+def get_user_task(id: int, done: Optional[bool] = None) -> List[Task]:
+    return crud.get_user_task(id, done)
 
 @app.patch("/tasks/{id}/done", response_model=Task)
 def change_done(id: int) -> Task:
     return crud.change_done(id)
-
-@app.get("/tasks_user", response_model=List[Task])
-def show_tasks(user_id: Optional[int] = None) -> List[Task]:
-    return crud.show_tasks(user_id)
-
-@app.get("/tasks_user_done", response_model=List[Task])
-def show_filtered_task(user_id: Optional[int] = None, done: Optional[int|bool] = None) -> List[Task]:
-    return crud.show_filtered_task(user_id, done)
-
-@app.get("/tasks_done_sort", response_model=List[Task])
-def show_done_sort(done: Optional[int|bool] = None, sort: str = None) -> List[Task]:
-    return crud.show_done_sort(done, sort)
-
-@app.get("/tasks_limit", response_model=List[Task])
-def show_limit(limit: Optional[int] = None ) -> List[Task]:
-    return crud.show_limit(limit)
-
-@app.get("/userss/{id}/tasks", response_model=List[Task])
-def show_tasks_sort(id: int, done: Optional[int|bool] = None) -> List[Task]:
-    return crud.show_tasks_sort(id, done)
-
-if __name__ == '__main__':
-    uvicorn.run("main:app", reload=True)

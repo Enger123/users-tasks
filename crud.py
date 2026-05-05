@@ -1,8 +1,12 @@
+import hashlib
 from fastapi import HTTPException
 from typing import List, Optional
 from models import Task, NewTask, User, NewUser
 from database import cur, conn
 from datetime import datetime
+
+def hashing(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
 
 def check_user(newtask: NewTask):
     cur.execute("SELECT id FROM users WHERE id = ?", (newtask.user_id, ))
@@ -92,7 +96,7 @@ def add_user(newuser: NewUser) -> User:
     cur.execute("SELECT name FROM users WHERE name = ?", (newuser.username, ))
     if cur.fetchone():
         raise HTTPException(status_code=400, detail='There is a user with this username')
-    cur.execute("INSERT INTO users (name, password, created_at) VALUES (?, ?, ?)", (newuser.username, newuser.password, datetime.now()))
+    cur.execute("INSERT INTO users (name, password, created_at) VALUES (?, ?, ?)", (newuser.username, hashing(newuser.password), datetime.now()))
     conn.commit()
     new_id = cur.lastrowid
     return User(id=new_id, username=newuser.username, created=str(datetime.now()))
@@ -118,5 +122,19 @@ def change_done(id: int) -> Task:
     cur.execute("SELECT * FROM tasks WHERE id = ?", (id,))
     task = cur.fetchone()
     return fetch_task(task)
+
+def login(newuser: NewUser) -> int:
+    cur.execute("SELECT id FROM users WHERE name = ? AND password = ?", (newuser.username, hashing(newuser.password)))
+    user = cur.fetchone()
+    if not user:
+        raise HTTPException(status_code=404, detail='User not exists')
+    return user[0]
+
+def get_user_by_username(username) -> User:
+    cur.execute("SELECT id, name, created_at FROM users WHERE name = ?", (username, ))
+    user = cur.fetchone()
+    if not user:
+        raise HTTPException(status_code=404, detail='User not found')
+    return User(id=user[0], username=user[1], created=user[2])
 
 

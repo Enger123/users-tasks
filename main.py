@@ -52,3 +52,11 @@ def get_user_task(id: int, done: Optional[bool] = None) -> List[Task]:
 @app.patch("/tasks/{id}/done", response_model=Task)
 def change_done(id: int) -> Task:
     return crud.change_done(id)
+
+@app.post("/login", response_model=int)
+def login(newuser: NewUser) -> int:
+    return crud.login(newuser)
+
+@app.get("/users/by-username/{username}", response_model=User)
+def get_user_by_username(username) -> User:
+    return crud.get_user_by_username(username)

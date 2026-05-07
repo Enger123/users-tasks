@@ -1,15 +1,23 @@
 import hashlib
 from fastapi import HTTPException
 from typing import List, Optional
-from models import Task, NewTask, User, NewUser
+from models import Task, NewTask, User, NewUser, UpdateTask
 from database import cur, conn
 from datetime import datetime
+
+def authorithation(id: int, user_id: int):
+    cur.execute("SELECT user_id FROM tasks WHERE id = ?", (id,))
+    user = cur.fetchone()
+    if not user:
+        raise HTTPException(status_code=404, detail='Wrong id')
+    if user_id != user[0]:
+        raise HTTPException(status_code=403, detail='Not this user')
 
 def hashing(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
-def check_user(newtask: NewTask):
-    cur.execute("SELECT id FROM users WHERE id = ?", (newtask.user_id, ))
+def check_user(user_id: int):
+    cur.execute("SELECT id FROM users WHERE id = ?", (user_id, ))
     if not cur.fetchone():
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -56,15 +64,15 @@ def get_task_id(id: int) -> Task:
     return fetch_task(task)
 
 def add_task(newtask: NewTask) -> Task:
-    check_user(newtask)
+    check_user(newtask.user_id)
     cur.execute("INSERT INTO tasks (title, done, user_id, created_at) VALUES (?, ?, ?, ?)", (newtask.title, 0, newtask.user_id, datetime.now()))
     conn.commit()
     new_id = cur.lastrowid
     return Task(id=new_id, title=newtask.title, done=False, user_id=newtask.user_id, created=str(datetime.now()))
 
-def change_task(id: int, newtask: NewTask) -> Task:
-    check_user(newtask)
-    cur.execute("UPDATE tasks SET title = ?, user_id = ? WHERE id = ?", (newtask.title, newtask.user_id, id))
+def change_task(id: int, user_id: int, newtask: UpdateTask) -> Task:
+    authorithation(id, user_id)
+    cur.execute("UPDATE tasks SET title = ? WHERE id = ? AND user_id = ?", (newtask.title, id, user_id))
     conn.commit()
     cur.execute("SELECT * FROM tasks WHERE id = ?", (id, ))
     t = cur.fetchone()
@@ -72,7 +80,8 @@ def change_task(id: int, newtask: NewTask) -> Task:
         raise HTTPException(status_code=404, detail='Nothing found with this id')
     return fetch_task(t)
 
-def delete_task(id: int) -> List[Task]:
+def delete_task(id: int, user_id: int) -> List[Task]:
+    authorithation(id, user_id)
     cur.execute("DELETE FROM tasks WHERE id = ?", (id, ))
     conn.commit()
     if cur.rowcount == 0:
@@ -111,12 +120,11 @@ def get_user_task(user_id: int, done: Optional[bool] = None) -> List[Task]:
         cur.execute("SELECT * FROM tasks WHERE user_id = ? AND done = ?", (user_id, int(done)))
     return fetch_tasks()
 
-def change_done(id: int) -> Task:
-    cur.execute("SELECT id, done FROM tasks WHERE id = ?", (id, ))
-    task = cur.fetchone()
-    if not task:
-        raise HTTPException(status_code=404, detail='Nothing found with this id')
-    new_done = 1 if task[1] == 0 else 0
+def change_done(id: int, user_id: int) -> Task:
+    authorithation(id, user_id)
+    cur.execute("SELECT done FROM tasks WHERE id = ?", (id, ))
+    user = cur.fetchone()[0]
+    new_done = 1 if user == 0 else 0
     cur.execute("UPDATE tasks SET done = ? WHERE id = ?", (new_done, id))
     conn.commit()
     cur.execute("SELECT * FROM tasks WHERE id = ?", (id,))

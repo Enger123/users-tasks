@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 import crud
 from typing import List, Optional
-from models import Task, NewTask, User, NewUser
+from models import Task, NewTask, User, NewUser, UpdateTask
 
 app = FastAPI()
 
@@ -22,13 +22,13 @@ def add_task(newtask: NewTask) -> Task:
 
 #PUT TASKS
 @app.put("/tasks/{id}", response_model=Task)
-def change_task(id: int, newtask: NewTask) -> Task:
-    return crud.change_task(id, newtask)
+def change_task(id: int, user_id: int, newtask: UpdateTask) -> Task:
+    return crud.change_task(id, user_id, newtask)
 
 #DELETE TASKS
 @app.delete("/tasks/{id}", response_model=List[Task])
-def delete_task(id: int) -> List[Task]:
-    return crud.delete_task(id)
+def delete_task(id: int, user_id: int) -> List[Task]:
+    return crud.delete_task(id, user_id)
 
 #GET USERS
 @app.get("/users", response_model=List[User])
@@ -50,8 +50,8 @@ def get_user_task(id: int, done: Optional[bool] = None) -> List[Task]:
     return crud.get_user_task(id, done)
 
 @app.patch("/tasks/{id}/done", response_model=Task)
-def change_done(id: int) -> Task:
-    return crud.change_done(id)
+def change_done(id: int, user_id: int) -> Task:
+    return crud.change_done(id, user_id)
 
 @app.post("/login", response_model=int)
 def login(newuser: NewUser) -> int:

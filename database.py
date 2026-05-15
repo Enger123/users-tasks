@@ -12,6 +12,6 @@ cur.execute("""CREATE TABLE IF NOT EXISTS tasks(
 cur.execute("""CREATE TABLE IF NOT EXISTS users(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name text,
-    password text,
+    hashed_password text,
     created_at TEXT
 )""")
